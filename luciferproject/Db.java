@@ -36,7 +36,7 @@ class StudentData{
 public class DB {
     
     Connection con;
-    ConnectionConfig cc = new ConnectionConfig("", "", "");
+    ConnectionConfig cc;
     
     private final String table_name;
     private final String insert_query, fetch_query;
@@ -48,26 +48,30 @@ public class DB {
     
     public DB() throws ClassNotFoundException{
         
-        this.driver_name = "";
-        this.table_name = "";
+        this.driver_name = "org.apache.derby.jdbc.ClientDriver";
+        this.table_name = "students";
         
         Class.forName(this.driver_name);
         
+        this.cc = new ConnectionConfig("jdbc:derby://localhost:1527/sis", "root", "root");
+        
         this.COL_id = 1;
-        this.COL_name = 2;
-        this.COL_enroll = 3;
+        this.COL_name = 3;
+        this.COL_enroll = 2;
         
         this.insert_query = "INSERT INTO " + this.table_name + " VALUES(?,?,?)";
         this.fetch_query = "SELECT * FROM " + this.table_name;
     }
     
-    public void connect(){
+    public boolean connect(){
         try{
             this.con = DriverManager.getConnection(cc.url, cc.user, cc.pass);
             this.insert_st = con.prepareStatement(this.insert_query);
             this.fetch_st = con.prepareStatement(this.fetch_query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            return true;
         }catch(SQLException e){
             System.out.println("Unable to Connect to Server! Err: " + e.toString());
+            return false;
         }
     }
     
@@ -112,8 +116,9 @@ public class DB {
     
     private int get_next_id() throws SQLException{
         ResultSet rs = this.fetch_st.executeQuery();
-        rs.last();
-        return rs.getInt(1) + 1;
+        if(rs.last())
+            return rs.getInt(1) + 1;
+        return 1;
     }
 
     public class RecordNotFoundException extends Exception{
